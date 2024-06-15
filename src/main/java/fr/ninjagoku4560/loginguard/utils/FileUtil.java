@@ -1,0 +1,75 @@
+package fr.ninjagoku4560.loginguard.utils;
+
+import fr.ninjagoku4560.loginguard.LoginGuard;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Objects;
+
+
+public class FileUtil {
+    public static String createFolder(String FolderName) {
+
+        // Créer un objet File représentant le dossier
+        File directory = new File(FolderName);
+
+        // Vérifier si le dossier existe déjà
+        if (!directory.exists()) {
+            // Créer le dossier
+            boolean created = directory.mkdir();
+
+            if (created) {
+                LoginGuard.LOGGER.info("The folder "+FolderName+" was created");
+                return FolderName;
+            } else {
+                LoginGuard.LOGGER.error("Creation of the folder "+FolderName+" have failed");
+            }
+        } else {
+            LoginGuard.LOGGER.warn("The folder "+FolderName+" already exist");
+            return FolderName;
+        }
+        return "";
+    }
+
+    public static void writeToFile(String filePath, String content) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+            writer.write(content);
+            LoginGuard.LOGGER.info("The file "+filePath+" was created");
+        } catch (IOException e) {
+            LoginGuard.LOGGER.error("Error while writing the file "+filePath+ " : " + e.getMessage());
+        }
+    }
+
+
+    public static String read(String filePath){
+        File file = new File(filePath);
+        if (!file.exists()) {return null;}
+        StringBuilder content = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line);
+            }
+        } catch (IOException e) {
+            LoginGuard.LOGGER.error("Error while reading the file : "+filePath+" : " + e.getMessage());
+        }
+
+        return content.toString();
+    }
+
+    public static boolean FileNotEmpty(String fileName) {
+        Path path = Paths.get(fileName);
+        LoginGuard.LOGGER.info(read(path.toString()));
+        if (Objects.equals(read(path.toString()), "") || read(path.toString()) == null) {
+            return false;
+        }
+        return true;
+    }
+
+    public static boolean fileExists(String fileName) {
+        Path path = Paths.get(fileName);
+        return Files.exists(path);
+    }
+}

@@ -1,0 +1,10 @@
+{
+  "difPassword": "The two passwords are different.",
+  "TryAgain": "Try again",
+  "RegisterDone": "Register Done",
+  "FreezeMessage": "You are immobilized until you register or login (/login or /register).",
+  "LoginDone": "Login Done",
+  "WrongPassword": "Password incorrect",
+  "NotRegister": "You haven't register",
+  "AlreadyRegister": "You are already registered, you must login using the \"/login\" command"
+}

@@ -1,0 +1,10 @@
+{
+  "difPassword": "Les deux mots de passe sont differents",
+  "TryAgain": "Veuillez réessayer",
+  "RegisterDone": "Inscription réussi",
+  "FreezeMessage": "Vous êtes immobilisé jusqu'à ce que vous vous connectez ou inscrivez (/login or /register).",
+  "LoginDone": "Connexion réussi",
+  "WrongPassword": "Mot de passe incorrect",
+  "NotRegister": "Vous n’êtes pas inscrit",
+  "AlreadyRegister": "Vous êtes déjà inscrit, vous devez vous connecter grace à la commande \"/login\""
+}

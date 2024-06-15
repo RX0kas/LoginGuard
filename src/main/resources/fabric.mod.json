@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "loginguard",
+  "version": "${version}",
+  "name": "LoginGuard",
+  "description": "",
+  "authors": ["RXokas"],
+  "contact": {
+    "repo": ""
+  },
+  "license": "MIT",
+  "icon": "",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "fr.ninjagoku4560.loginguard.client.LoginGuardClient"
+    ],
+    "main": [
+      "fr.ninjagoku4560.loginguard.LoginGuard"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
