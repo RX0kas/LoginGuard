@@ -10,9 +10,6 @@ import java.util.Objects;
 public class Registering {
 
     static private final String FolderName = "password";
-    public static void init(){
-        FileUtil.createFolder(FolderName);
-    }
     public static boolean register(ServerPlayerEntity player, String password){
         String path = FolderName+"\\"+player.getName().getString()+".txt";
         // save the password

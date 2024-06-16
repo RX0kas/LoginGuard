@@ -72,4 +72,40 @@ public class FileUtil {
         Path path = Paths.get(fileName);
         return Files.exists(path);
     }
+
+    public static void savePlayerPosition(String fileName, double x, double y, double z) {
+        String content = x + "," + y + "," + z;
+        writeToFile(fileName, content);
+    }
+
+    public static double[] loadPlayerPosition(String fileName) {
+        String content = read(fileName);
+        if (content == null || content.isEmpty()) {
+            return null;
+        }
+        String[] parts = content.split(",");
+        if (parts.length == 3) {
+            try {
+                double x = Double.parseDouble(parts[0]);
+                double y = Double.parseDouble(parts[1]);
+                double z = Double.parseDouble(parts[2]);
+                return new double[]{x, y, z};
+            } catch (NumberFormatException e) {
+                LoginGuard.LOGGER.error(e);
+            }
+        }
+        return null;
+    }
+
+    public static void createEmptyFile(String fileName) {
+        Path path = Paths.get(fileName);
+        try {
+            Files.createDirectories(path.getParent());
+            if (!Files.exists(path)) {
+                Files.createFile(path);
+            }
+        } catch (IOException e) {
+            LoginGuard.LOGGER.error(e);
+        }
+    }
 }

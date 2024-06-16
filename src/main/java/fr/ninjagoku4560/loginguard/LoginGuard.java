@@ -20,7 +20,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,11 +36,12 @@ public class LoginGuard implements ModInitializer {
         // Log a message when the mod is initialized
         LOGGER.info("Initializing LoginGuard");
 
-        // Register commands
-        Registering.init();
+        FileUtil.createFolder("password");
+        FileUtil.createFolder("positions");
 
-        // Register the player join event
+        // Register the player join and leave events
         ServerPlayConnectionEvents.JOIN.register(this::onPlayerJoin);
+        ServerPlayConnectionEvents.DISCONNECT.register(this::onPlayerLeave);
 
         // Register server tick event to handle immobilized players
         ServerTickEvents.START_SERVER_TICK.register(this::onServerTick);
@@ -50,21 +51,43 @@ public class LoginGuard implements ModInitializer {
 
     private void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
         ServerPlayerEntity player = handler.getPlayer();
-
+        String playerName = player.getName().getString();
+        String positionFileName = "positions\\" + playerName + ".txt";
+        if (!FileUtil.fileExists(positionFileName)) {
+            BlockPos spawn = server.getOverworld().getSpawnPos();
+            FileUtil.savePlayerPosition(positionFileName,spawn.getX(),spawn.getY(),spawn.getZ());
+        }
         // Immobilize the player
         immobilizedPlayers.add(player);
-        if (!FileUtil.fileExists("password\\" + player.getName().getString() + ".txt")) {
-            FileUtil.writeToFile("password\\" + player.getName().getString() + ".txt", "");
+        if (!FileUtil.fileExists("password\\" + playerName + ".txt")) {
+            FileUtil.writeToFile("password\\" + playerName + ".txt", "");
         }
         player.sendMessage(Text.translatable("FreezeMessage"));
+        // Load and teleport to the saved position
+        double[] position = FileUtil.loadPlayerPosition(positionFileName);
+        if (position != null) {
+            player.teleport(position[0], position[1], position[2], false);
+        }
+    }
+
+    private void onPlayerLeave(ServerPlayNetworkHandler handler, MinecraftServer server) {
+        ServerPlayerEntity player = handler.getPlayer();
+        String playerName = player.getName().getString();
+        String positionFileName = "positions\\" + playerName + ".txt";
+
+        // Save the player's current position
+        BlockPos pos = player.getBlockPos();
+        FileUtil.savePlayerPosition(positionFileName, pos.getX(), pos.getY(), pos.getZ());
     }
 
     private void onServerTick(MinecraftServer server) {
-        BlockPos spawn = server.getOverworld().getSpawnPos();
         // Iterate over immobilized players and prevent movement
+
         for (ServerPlayerEntity player : immobilizedPlayers) {
             player.setVelocity(0, 0, 0);
-            player.teleport(spawn.getX(), spawn.getY(), spawn.getZ(), false);
+            double[] pos = FileUtil.loadPlayerPosition("positions\\" + player.getName().getString() + ".txt");
+            assert pos != null;
+            player.teleport(pos[0], pos[1], pos[2], false);
         }
     }
 
@@ -84,13 +107,12 @@ public class LoginGuard implements ModInitializer {
 
                                     String playerFileName = "password\\" + player.getName().getString() + ".txt";
 
-                                    LOGGER.info(FileUtil.FileNotEmpty(playerFileName));
                                     // Verify if the player is already registered
-                                    if (FileUtil.FileNotEmpty(playerFileName)) {
+                                    if (FileUtil.fileExists(playerFileName) && FileUtil.FileNotEmpty(playerFileName)) {
                                         player.sendMessage(Text.translatable("AlreadyRegister"));
                                         return 1;
                                     }
-                                    LOGGER.info("Not register");
+                                    LOGGER.info("Not registered");
                                     if (password.equals(confirmPassword)) {
                                         boolean registered = Registering.register(player, password);
                                         if (registered) {
