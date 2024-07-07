@@ -10,7 +10,7 @@ import java.util.Objects;
 
 
 public class FileUtil {
-    public static String createFolder(String FolderName) {
+    public static void createFolder(String FolderName) {
 
         // Créer un objet File représentant le dossier
         File directory = new File(FolderName);
@@ -22,21 +22,17 @@ public class FileUtil {
 
             if (created) {
                 LoginGuard.LOGGER.info("The folder "+FolderName+" was created");
-                return FolderName;
             } else {
                 LoginGuard.LOGGER.error("Creation of the folder "+FolderName+" have failed");
             }
         } else {
             LoginGuard.LOGGER.warn("The folder "+FolderName+" already exist");
-            return FolderName;
         }
-        return "";
     }
 
     public static void writeToFile(String filePath, String content) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
             writer.write(content);
-            LoginGuard.LOGGER.info("The file "+filePath+" was created");
         } catch (IOException e) {
             LoginGuard.LOGGER.error("Error while writing the file "+filePath+ " : " + e.getMessage());
         }
@@ -61,11 +57,7 @@ public class FileUtil {
 
     public static boolean FileNotEmpty(String fileName) {
         Path path = Paths.get(fileName);
-        LoginGuard.LOGGER.info(read(path.toString()));
-        if (Objects.equals(read(path.toString()), "") || read(path.toString()) == null) {
-            return false;
-        }
-        return true;
+        return !Objects.equals(read(path.toString()), "") && read(path.toString()) != null;
     }
 
     public static boolean fileExists(String fileName) {
@@ -93,6 +85,8 @@ public class FileUtil {
             } catch (NumberFormatException e) {
                 LoginGuard.LOGGER.error(e);
             }
+        } else {
+            LoginGuard.LOGGER.warn(parts.length);
         }
         return null;
     }

@@ -20,7 +20,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -37,8 +36,11 @@ public class LoginGuard implements ModInitializer {
         LOGGER.info("Initializing LoginGuard");
 
         FileUtil.createFolder("password");
-        FileUtil.createFolder("positions");
-
+        try {
+            FileUtil.createFolder("positions");
+        } catch (Exception e) {
+            LOGGER.error(e);
+        }
         // Register the player join and leave events
         ServerPlayConnectionEvents.JOIN.register(this::onPlayerJoin);
         ServerPlayConnectionEvents.DISCONNECT.register(this::onPlayerLeave);
@@ -52,15 +54,15 @@ public class LoginGuard implements ModInitializer {
     private void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
         ServerPlayerEntity player = handler.getPlayer();
         String playerName = player.getName().getString();
-        String positionFileName = "positions\\" + playerName + ".txt";
+        String positionFileName = "positions"+ File.separator + playerName + ".txt";
         if (!FileUtil.fileExists(positionFileName)) {
-            BlockPos spawn = server.getOverworld().getSpawnPos();
-            FileUtil.savePlayerPosition(positionFileName,spawn.getX(),spawn.getY(),spawn.getZ());
+            BlockPos spawnO = server.getOverworld().getSpawnPos();
+            FileUtil.savePlayerPosition(positionFileName,spawnO.getX(),spawnO.getY(),spawnO.getZ());
         }
         // Immobilize the player
         immobilizedPlayers.add(player);
-        if (!FileUtil.fileExists("password\\" + playerName + ".txt")) {
-            FileUtil.writeToFile("password\\" + playerName + ".txt", "");
+        if (!FileUtil.fileExists("password"+ File.separator + playerName + ".txt")) {
+            FileUtil.writeToFile("password"+ File.separator + playerName + ".txt", "");
         }
         player.sendMessage(Text.translatable("FreezeMessage"));
         // Load and teleport to the saved position
@@ -73,7 +75,7 @@ public class LoginGuard implements ModInitializer {
     private void onPlayerLeave(ServerPlayNetworkHandler handler, MinecraftServer server) {
         ServerPlayerEntity player = handler.getPlayer();
         String playerName = player.getName().getString();
-        String positionFileName = "positions\\" + playerName + ".txt";
+        String positionFileName = "positions"+ File.separator + playerName + ".txt";
 
         // Save the player's current position
         BlockPos pos = player.getBlockPos();
@@ -85,9 +87,12 @@ public class LoginGuard implements ModInitializer {
 
         for (ServerPlayerEntity player : immobilizedPlayers) {
             player.setVelocity(0, 0, 0);
-            double[] pos = FileUtil.loadPlayerPosition("positions\\" + player.getName().getString() + ".txt");
-            assert pos != null;
-            player.teleport(pos[0], pos[1], pos[2], false);
+            double[] pos = FileUtil.loadPlayerPosition("positions"+ File.separator + player.getName().getString() + ".txt");
+            if (pos != null) {
+                player.teleport(pos[0], pos[1], pos[2], false);
+            } else {
+                LOGGER.error("pos == null for "+player.getName().getString());
+            }
         }
     }
 
@@ -105,14 +110,13 @@ public class LoginGuard implements ModInitializer {
                                     ServerPlayerEntity player = context.getSource().getPlayer();
                                     assert player != null && password != null && confirmPassword != null;
 
-                                    String playerFileName = "password\\" + player.getName().getString() + ".txt";
+                                    String playerFileName = "password"+ File.separator + player.getName().getString() + ".txt";
 
                                     // Verify if the player is already registered
                                     if (FileUtil.fileExists(playerFileName) && FileUtil.FileNotEmpty(playerFileName)) {
                                         player.sendMessage(Text.translatable("AlreadyRegister"));
                                         return 1;
                                     }
-                                    LOGGER.info("Not registered");
                                     if (password.equals(confirmPassword)) {
                                         boolean registered = Registering.register(player, password);
                                         if (registered) {
