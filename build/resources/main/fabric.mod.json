@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "id": "loginguard",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "LoginGuard",
   "description": "",
   "authors": ["RXokas"],

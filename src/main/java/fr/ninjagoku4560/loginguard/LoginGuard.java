@@ -20,6 +20,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.File;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,12 +37,16 @@ public class LoginGuard implements ModInitializer {
         // Log a message when the mod is initialized
         LOGGER.info("Initializing LoginGuard");
 
-        FileUtil.createFolder("password");
+        //Create The Folder
         try {
-            FileUtil.createFolder("positions");
+            FileUtil.createFolder("LoginGuard Data");
+            SQLiteHandler.getDataconnection();
         } catch (Exception e) {
             LOGGER.error(e);
         }
+
+
+
         // Register the player join and leave events
         ServerPlayConnectionEvents.JOIN.register(this::onPlayerJoin);
         ServerPlayConnectionEvents.DISCONNECT.register(this::onPlayerLeave);
@@ -54,32 +60,42 @@ public class LoginGuard implements ModInitializer {
     private void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
         ServerPlayerEntity player = handler.getPlayer();
         String playerName = player.getName().getString();
-        String positionFileName = "positions"+ File.separator + playerName + ".txt";
-        if (!FileUtil.fileExists(positionFileName)) {
+
+        player.sendMessage(Text.translatable("FreezeMessage"));
+
+        double[] position = null;
+        try {
+            position = SQLiteHandler.retrievePosData(playerName);
+        } catch (SQLException e) {
+            LOGGER.warn("Was Unable to retrieve player position");
+        }
+
+        if(position == null ){
             BlockPos spawnO = server.getOverworld().getSpawnPos();
-            FileUtil.savePlayerPosition(positionFileName,spawnO.getX(),spawnO.getY(),spawnO.getZ());
+            try {
+                SQLiteHandler.SetPosData(playerName, spawnO.getX(), spawnO.getY(),spawnO.getZ());
+            } catch (SQLException e) {
+                LOGGER.warn("Was Unable to save player position as spawn");
+            }
+        }
+        else {
+            player.teleport(position[0],position[1], position[2], false);
         }
         // Immobilize the player
         immobilizedPlayers.add(player);
-        if (!FileUtil.fileExists("password"+ File.separator + playerName + ".txt")) {
-            FileUtil.writeToFile("password"+ File.separator + playerName + ".txt", "");
-        }
-        player.sendMessage(Text.translatable("FreezeMessage"));
-        // Load and teleport to the saved position
-        double[] position = FileUtil.loadPlayerPosition(positionFileName);
-        if (position != null) {
-            player.teleport(position[0], position[1], position[2], false);
-        }
     }
 
     private void onPlayerLeave(ServerPlayNetworkHandler handler, MinecraftServer server) {
         ServerPlayerEntity player = handler.getPlayer();
         String playerName = player.getName().getString();
-        String positionFileName = "positions"+ File.separator + playerName + ".txt";
 
         // Save the player's current position
         BlockPos pos = player.getBlockPos();
-        FileUtil.savePlayerPosition(positionFileName, pos.getX(), pos.getY(), pos.getZ());
+        try {
+            SQLiteHandler.SetPosData(playerName, pos.getX(),pos.getY(), pos.getZ());
+        } catch (SQLException e) {
+            LOGGER.warn("Failed to save position of Player: "+playerName);
+        }
     }
 
     private void onServerTick(MinecraftServer server) {
@@ -87,11 +103,17 @@ public class LoginGuard implements ModInitializer {
 
         for (ServerPlayerEntity player : immobilizedPlayers) {
             player.setVelocity(0, 0, 0);
-            double[] pos = FileUtil.loadPlayerPosition("positions"+ File.separator + player.getName().getString() + ".txt");
+            double[] pos = null;
+            try {
+                pos = SQLiteHandler.retrievePosData(player.getName().getString());
+            } catch (SQLException e) {
+                LOGGER.error("Error while retrieving the position data of "+player.getName().getString()+": "+e);
+            }
             if (pos != null) {
                 player.teleport(pos[0], pos[1], pos[2], false);
             } else {
                 LOGGER.error("pos == null for "+player.getName().getString());
+                player.teleport(0, 0, 0, false);
             }
         }
     }
@@ -109,25 +131,57 @@ public class LoginGuard implements ModInitializer {
                                     String confirmPassword = StringArgumentType.getString(context, "confirmPassword");
                                     ServerPlayerEntity player = context.getSource().getPlayer();
                                     assert player != null && password != null && confirmPassword != null;
+                                    String playerPassword = "";
 
-                                    String playerFileName = "password"+ File.separator + player.getName().getString() + ".txt";
+                                    //Trying to retrieve Player Password
+                                    try {
+                                        playerPassword = SQLiteHandler.retrieveRegData(player.getName().getString());
+                                    } catch (SQLException e) {
+                                        LOGGER.warn("Failed to Get Player Reg Info : "+e);
+                                    }
 
-                                    // Verify if the player is already registered
-                                    if (FileUtil.fileExists(playerFileName) && FileUtil.FileNotEmpty(playerFileName)) {
+                                    //If the Player already exists in table
+                                    if(!playerPassword.equals("NULL")){
                                         player.sendMessage(Text.translatable("AlreadyRegister"));
                                         return 1;
                                     }
-                                    if (password.equals(confirmPassword)) {
-                                        boolean registered = Registering.register(player, password);
-                                        if (registered) {
-                                            // Player can move
-                                            releasePlayer(player);
-                                            player.sendMessage(Text.translatable("RegisterDone"));
+                                    else {
+                                        //Register the Player
+
+                                        //Checking if the Passwords are the same
+                                        if (password.equals(confirmPassword)) {
+
+                                            //Insert the Password
+                                            try {
+                                                SQLiteHandler.insertRegData(player.getName().getString(),password);
+                                            } catch (SQLException e) {}
+
+                                            boolean registered = false;
+
+                                            //Checking if the Registration worked
+                                            try {
+                                                String pass = SQLiteHandler.retrieveRegData(player.getName().getString());
+                                                if(!pass.equals("NULL")) registered = true;
+                                            } catch (SQLException e) {}
+
+                                            if (registered) {
+                                                // Player can move
+                                                releasePlayer(player);
+                                                player.sendMessage(Text.translatable("RegisterDone"));
+                                            }
+                                        } else {
+                                            player.sendMessage(Text.translatable("difPassword"));
+                                            player.sendMessage(Text.translatable("TryAgain"));
                                         }
-                                    } else {
-                                        player.sendMessage(Text.translatable("difPassword"));
-                                        player.sendMessage(Text.translatable("TryAgain"));
                                     }
+
+
+                                    // Verify if the player is already registered
+//                                    if (FileUtil.fileExists(playerFileName) && FileUtil.FileNotEmpty(playerFileName)) {
+//                                        player.sendMessage(Text.translatable("AlreadyRegister"));
+//                                        return 1;
+//                                    }
+
                                     return 1;
                                 })
                         )
