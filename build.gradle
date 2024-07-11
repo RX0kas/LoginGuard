@@ -28,7 +28,7 @@ dependencies {
     modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // SQLite API
-    implementation 'org.xerial:sqlite-jdbc:3.41.2.2'
+    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'
 }
 
 processResources {
