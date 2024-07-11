@@ -25,3 +25,14 @@ replay_pid*
 
 /run/saves
 /run/logs
+/run
+\run\logs
+\run\saves
+\run
+
+run/saves
+run/logs
+run
+run\logs
+run\saves
+run
