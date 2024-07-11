@@ -12,28 +12,40 @@ public class SQLiteHandler {
             try {
                 // Load the SQLite JDBC driver
                 Class.forName("org.sqlite.JDBC");
+                LoginGuard.LOGGER.info("SQLite JDBC driver loaded successfully");
 
                 // Define the path where the SQLite database will be created
-                String dbPath = "LoginGuard Data" + File.separator +"LoginGuard.db";
+                String dbPath = "LoginGuard Data" + File.separator + "LoginGuard.db";
                 File dbFile = new File(dbPath);
+
+                // Ensure the folder exists
+                File dataFolder = new File("LoginGuard Data");
+                if (!dataFolder.exists()) {
+                    boolean dirCreated = dataFolder.mkdirs();
+                    if (dirCreated) {
+                        LoginGuard.LOGGER.info("Data folder created successfully");
+                    } else {
+                        LoginGuard.LOGGER.error("Failed to create data folder");
+                        return;
+                    }
+                }
 
                 // Connect to SQLite database (create new if not exists)
                 String url = "jdbc:sqlite:" + dbFile.getAbsolutePath();
                 dataconnection = DriverManager.getConnection(url);
-
                 LoginGuard.LOGGER.info("Connected to SQLite database");
-                LoginGuard.LOGGER.info("Creating Data Tables");
 
                 boolean tableCreation = createDataTableIfNotExists();
                 if(!tableCreation){
                     LoginGuard.LOGGER.error("Database Tables were not created");
                 }
 
-            } catch (ClassNotFoundException | SQLException e) {
+            } catch (ClassNotFoundException e) {
+                LoginGuard.LOGGER.error("SQLite JDBC driver not found: " + e.getMessage());
+            } catch (SQLException e) {
                 LoginGuard.LOGGER.error("Error connecting to SQLite database: " + e.getMessage());
             }
         }
-        return;
     }
 
     public static void insertRegData(String PlayerName, String password) throws SQLException {

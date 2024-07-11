@@ -37,13 +37,6 @@ public class LoginGuard implements ModInitializer {
         // Log a message when the mod is initialized
         LOGGER.info("Initializing LoginGuard");
 
-//        FileUtil.createFolder("password");
-//        try {
-//            FileUtil.createFolder("positions");
-//        } catch (Exception e) {
-//            LOGGER.error(e);
-//        }
-
         //Create The Folder
         try {
             FileUtil.createFolder("LoginGuard Data");
@@ -51,9 +44,6 @@ public class LoginGuard implements ModInitializer {
         } catch (Exception e) {
             LOGGER.error(e);
         }
-
-
-
 
 
 
@@ -67,39 +57,11 @@ public class LoginGuard implements ModInitializer {
         CommandRegistrationCallback.EVENT.register(this::registerCommands);
     }
 
-//    private void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
-//        ServerPlayerEntity player = handler.getPlayer();
-//        String playerName = player.getName().getString();
-//        String positionFileName = "positions"+ File.separator + playerName + ".txt";
-//        if (!FileUtil.fileExists(positionFileName)) {
-//            BlockPos spawnO = server.getOverworld().getSpawnPos();
-//            FileUtil.savePlayerPosition(positionFileName,spawnO.getX(),spawnO.getY(),spawnO.getZ());
-//        }
-//        // Immobilize the player
-//        immobilizedPlayers.add(player);
-//        if (!FileUtil.fileExists("password"+ File.separator + playerName + ".txt")) {
-//            FileUtil.writeToFile("password"+ File.separator + playerName + ".txt", "");
-//        }
-//        player.sendMessage(Text.translatable("FreezeMessage"));
-//        // Load and teleport to the saved position
-//        double[] position = FileUtil.loadPlayerPosition(positionFileName);
-//        if (position != null) {
-//            player.teleport(position[0], position[1], position[2], false);
-//        }
-//    }
-
     private void onPlayerJoin(ServerPlayNetworkHandler handler, PacketSender sender, MinecraftServer server) {
         ServerPlayerEntity player = handler.getPlayer();
         String playerName = player.getName().getString();
 
         player.sendMessage(Text.translatable("FreezeMessage"));
-
-
-//        String positionFileName = "positions"+ File.separator + playerName + ".txt";
-//        if (!FileUtil.fileExists(positionFileName)) {
-//            BlockPos spawnO = server.getOverworld().getSpawnPos();
-//            FileUtil.savePlayerPosition(positionFileName,spawnO.getX(),spawnO.getY(),spawnO.getZ());
-//        }
 
         double[] position = null;
         try {
@@ -121,25 +83,6 @@ public class LoginGuard implements ModInitializer {
         }
         // Immobilize the player
         immobilizedPlayers.add(player);
-
-
-
-//        try {
-//            SQLiteHandler.insertRegData("PLAYER", "Test");
-//        } catch (SQLException e) {
-//            LOGGER.error("Failed to add Player: "+ e);
-//        }
-
-//        try {
-//            LOGGER.log(Level.INFO, SQLiteHandler.retrieveRegData("PLAYER"));
-//        } catch (SQLException e) {
-//            LOGGER.warn("Player Password Retrieval Failed");
-//        }
-        // Load and teleport to the saved position
-//        double[] position = FileUtil.loadPlayerPosition(positionFileName);
-//        if (position != null) {
-//            player.teleport(position[0], position[1], position[2], false);
-//        }
     }
 
     private void onPlayerLeave(ServerPlayNetworkHandler handler, MinecraftServer server) {
@@ -163,7 +106,9 @@ public class LoginGuard implements ModInitializer {
             double[] pos = null;
             try {
                 pos = SQLiteHandler.retrievePosData(player.getName().getString());
-            } catch (SQLException e) {}
+            } catch (SQLException e) {
+                LOGGER.error("Error while retrieving the position data of "+player.getName().getString()+": "+e);
+            }
             if (pos != null) {
                 player.teleport(pos[0], pos[1], pos[2], false);
             } else {
@@ -176,66 +121,6 @@ public class LoginGuard implements ModInitializer {
     public static void releasePlayer(ServerPlayerEntity player) {
         immobilizedPlayers.remove(player);
     }
-
-//    private void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess commandRegistryAccess, CommandManager.RegistrationEnvironment registrationEnvironment) {
-//        dispatcher.register(CommandManager.literal("register")
-//                .then(CommandManager.argument("password", StringArgumentType.word())
-//                        .then(CommandManager.argument("confirmPassword", StringArgumentType.word())
-//                                .executes(context -> {
-//                                    String password = StringArgumentType.getString(context, "password");
-//                                    String confirmPassword = StringArgumentType.getString(context, "confirmPassword");
-//                                    ServerPlayerEntity player = context.getSource().getPlayer();
-//                                    assert player != null && password != null && confirmPassword != null;
-//
-//                                    String playerFileName = "password"+ File.separator + player.getName().getString() + ".txt";
-//
-//                                    // Verify if the player is already registered
-//                                    if (FileUtil.fileExists(playerFileName) && FileUtil.FileNotEmpty(playerFileName)) {
-//                                        player.sendMessage(Text.translatable("AlreadyRegister"));
-//                                        return 1;
-//                                    }
-//                                    if (password.equals(confirmPassword)) {
-//                                        boolean registered = Registering.register(player, password);
-//                                        if (registered) {
-//                                            // Player can move
-//                                            releasePlayer(player);
-//                                            player.sendMessage(Text.translatable("RegisterDone"));
-//                                        }
-//                                    } else {
-//                                        player.sendMessage(Text.translatable("difPassword"));
-//                                        player.sendMessage(Text.translatable("TryAgain"));
-//                                    }
-//                                    return 1;
-//                                })
-//                        )
-//                )
-//        );
-//
-//        dispatcher.register(CommandManager.literal("login")
-//                .then(CommandManager.argument("password", StringArgumentType.word())
-//                        .executes(context -> {
-//                            String password = StringArgumentType.getString(context, "password");
-//                            ServerPlayerEntity player = context.getSource().getPlayer();
-//                            assert player != null && password != null;
-//                            // 0 = Wrong Password
-//                            // 1 = Login Done
-//                            // 2 = Not Register
-//                            int LoginCode = Login.check(player, password);
-//                            if (LoginCode == 1) {
-//                                // Player can move
-//                                releasePlayer(player);
-//                                player.sendMessage(Text.translatable("LoginDone"));
-//                            } else if (LoginCode == 0) {
-//                                player.sendMessage(Text.translatable("WrongPassword"));
-//                                player.sendMessage(Text.translatable("TryAgain"));
-//                            } else if (LoginCode == 2) {
-//                                player.sendMessage(Text.translatable("NotRegister"));
-//                            }
-//                            return 1;
-//                        })
-//                )
-//        );
-//    }
 
     private void registerCommands(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess commandRegistryAccess, CommandManager.RegistrationEnvironment registrationEnvironment) {
         dispatcher.register(CommandManager.literal("register")
